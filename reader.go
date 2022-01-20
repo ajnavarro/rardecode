@@ -505,3 +505,31 @@ func List(name string, opts ...Option) ([]*File, error) {
 		fl = append(fl, f)
 	}
 }
+
+// ListReader returns a list of File's in the RAR archive specified by reader.
+func ListReader(re io.Reader, opts ...Option) ([]*File, error) {
+	r, err := NewReader(re, opts...)
+	if err != nil {
+		return nil, err
+	}
+	pr := r.pr
+	defer pr.Close()
+
+	var fl []*File
+	for {
+		// get next file
+		h, err := pr.next()
+		if err != nil {
+			if err == io.EOF {
+				return fl, nil
+			}
+			return nil, err
+		}
+
+		// save information for File
+		f := new(File)
+		f.FileHeader = h.FileHeader
+		f.pr = pr.clone()
+		fl = append(fl, f)
+	}
+}
